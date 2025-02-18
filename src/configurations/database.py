@@ -8,17 +8,17 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from models.base import BaseModel
+from src.models.base import BaseModel
+from src.configurations.settings import settings
 
+__all__ = ["global_init", "get_async_session", "create_db_and_tables"]
 
 logger = logging.getLogger("__name__")
 
 __async_engine: Optional[AsyncEngine] = None
 __session_factory: Optional[Callable[[], AsyncSession]] = None
 
-SQLALCHEMY_DATABASE_URL = (
-    "postgresql+asyncpg://postgres_user:postgres_pass@127.0.0.1:5445/fastapi_project_db"
-)
+SQLALCHEMY_DATABASE_URL = settings.database_url
 
 
 def global_init() -> None:
@@ -55,7 +55,7 @@ async def get_async_session() -> AsyncGenerator:
 
 
 async def create_db_and_tables():
-    from models.books import Book
+    from src.models.books import Book
 
     global __async_engine
 
@@ -65,5 +65,5 @@ async def create_db_and_tables():
         )
 
     async with __async_engine.begin() as conn:
-        await conn.run_sync(BaseModel.metadata.drop_all)
+        # await conn.run_sync(BaseModel.metadata.drop_all)
         await conn.run_sync(BaseModel.metadata.create_all)

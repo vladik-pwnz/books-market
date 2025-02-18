@@ -9,8 +9,31 @@
       "type": "debugpy",
       "request": "launch",
       "module": "uvicorn",
-      "args": ["main:app", "--host", "127.0.0.1", "--port", "8000", "--reload"],
+      "args": [
+        "src.main:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8000",
+        "--reload"
+      ],
       "jinja": true,
+      "justMyCode": false
+    },
+    {
+      "name": "Project Tests",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/src",
+      "args": [
+        "tests",
+        "-ra",
+        "--color=yes",
+        "--verbosity=2",
+        "-c=${workspaceFolder}/src/pytest.ini"
+      ],
       "justMyCode": false
     }
   ]

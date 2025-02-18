@@ -2,8 +2,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
-from configurations.database import create_db_and_tables, global_init
-from routers import v1_router
+from src.configurations.database import create_db_and_tables, global_init
+from src.routers import v1_router
 from icecream import ic
 
 
