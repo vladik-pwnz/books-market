@@ -1,3 +1,4 @@
+version: "3.9"
 services:
   db:
     build:
@@ -11,10 +12,26 @@ services:
       - POSTGRES_PASSWORD=postgres_pass
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
-    networks: [fastapi_project_shad]
+    networks:
+      - fastapi_project_shad
 
-volumes:
-  postgres_data:
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USERNAME=postgres_user
+      - DB_PASSWORD=postgres_pass
+      - DB_NAME=fastapi_project_db
+    depends_on:
+      - db
+    networks:
+      - fastapi_project_shad
 
 networks:
   fastapi_project_shad:
