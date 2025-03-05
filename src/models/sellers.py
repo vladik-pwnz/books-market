@@ -1,6 +1,5 @@
-from sqlalchemy import String, Integer
-from sqlalchemy.orm import relationship
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import BaseModel
 
 
@@ -13,4 +12,4 @@ class Seller(BaseModel):
     e_mail: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     password: Mapped[str] = mapped_column(String(100), nullable=False)
 
-    books: Mapped[list["Book"]] = relationship("Book", back_populates="seller")
+    books: Mapped[list["Book"]] = relationship("Book", back_populates="seller", cascade="all, delete-orphan")

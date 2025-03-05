@@ -1,7 +1,8 @@
 from pydantic import BaseModel, Field, field_validator
+from typing import List, Optional
 import datetime
 
-__all__ = ["IncomingBook", "ReturnedBook", "ReturnedAllbooks"]
+__all__ = ["IncomingBook", "ReturnedBook", "ReturnedAllBooks"]
 
 
 class BaseBook(BaseModel):
@@ -29,5 +30,5 @@ class ReturnedBook(BaseBook):
     seller_id: int
 
 
-class ReturnedAllbooks(BaseModel):
-    books: list[ReturnedBook]
+class ReturnedAllBooks(BaseModel):
+    books: List[ReturnedBook]

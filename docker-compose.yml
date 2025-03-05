@@ -30,6 +30,9 @@ services:
       - DB_NAME=fastapi_project_db
     depends_on:
       - db
+    volumes: 
+      - .:/app
+
     networks:
       - fastapi_project_shad
 

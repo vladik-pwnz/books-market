@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Response, status, HTTPException
 from sqlalchemy import select
 from src.models.books import Book
 from src.models.sellers import Seller
-from src.schemas import IncomingBook, ReturnedAllbooks, ReturnedBook
+from src.schemas import IncomingBook, ReturnedAllBooks, ReturnedBook
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.configurations import get_async_session
 from typing import Annotated
@@ -43,7 +43,7 @@ async def create_book(
     return new_book
 
 
-@books_router.get("/", response_model=ReturnedAllbooks)
+@books_router.get("/", response_model=ReturnedAllBooks)
 async def get_all_books(session: DBSession):
     query = select(Book)  # SELECT * FROM book
     result = await session.execute(query)

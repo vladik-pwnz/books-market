@@ -1,7 +1,9 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator, validator
 from pydantic import ValidationError
+from typing import List, Optional
+from .books import ReturnedAllBooks, ReturnedBook
 
-__all__ = ["IncomingSeller", "ReturnedSeller"]
+__all__ = ["IncomingSeller", "ReturnedSeller", "ReturnedAllSellers"]
 
 
 class BaseSeller(BaseModel):
@@ -22,3 +24,17 @@ class IncomingSeller(BaseSeller):
 
 class ReturnedSeller(BaseSeller):
     id: int
+    books: Optional[List[ReturnedBook]] = []
+
+    model_config = {
+        'from_attributes': True,
+        'exclude': {'password'}
+    }
+
+
+class ReturnedAllSellers(BaseModel):
+    sellers: List[ReturnedSeller]
+    
+    model_config = {
+        'from_attributes': True
+    }
