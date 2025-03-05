@@ -2,11 +2,12 @@ import logging
 from fastapi import APIRouter, Depends, Response, status, HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import selectinload
 from src.models.sellers import Seller
-from src.schemas import IncomingSeller, ReturnedSeller
+from src.schemas import IncomingSeller, ReturnedSeller, ReturnedAllSellers
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.configurations import get_async_session
-from typing import Annotated
+from src.configurations import get_async_session 
+from typing import Annotated, List
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,10 @@ async def create_seller(
 
         session.add(new_seller)
         await session.commit()
-        await session.refresh(new_seller)
+        
+        stmt = select(Seller).where(Seller.id == new_seller.id).options(selectinload(Seller.books))
+        result = await session.execute(stmt)
+        new_seller = result.scalar_one()
         
         logger.info(f"Successfully created seller with ID: {new_seller.id}")
         return new_seller
@@ -74,14 +78,21 @@ async def create_seller(
 async def get_seller(seller_id: int, session: DBSession):
     try:
         logger.info(f"Fetching seller with ID: {seller_id}")
-        if seller := await session.get(Seller, seller_id):
-            return seller
         
-        logger.warning(f"Seller with ID {seller_id} not found")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail="Seller not found"
-        )
+        # Use selectinload to eagerly load the relationship
+        stmt = select(Seller).where(Seller.id == seller_id).options(selectinload(Seller.books))
+        result = await session.execute(stmt)
+        seller = result.scalar_one_or_none()
+        
+        if not seller:
+            logger.warning(f"Seller with ID {seller_id} not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Seller not found"
+            )
+            
+        return ReturnedSeller.model_validate(seller)
+        
     except SQLAlchemyError as e:
         logger.error(f"Database error while fetching seller {seller_id}: {str(e)}")
         raise HTTPException(
@@ -90,11 +101,11 @@ async def get_seller(seller_id: int, session: DBSession):
         )
 
 
-@sellers_router.get("/", response_model=list[ReturnedSeller])
+@sellers_router.get("/", response_model=List[ReturnedSeller])
 async def get_all_sellers(session: DBSession):
     try:
         logger.info("Fetching all sellers")
-        query = select(Seller)
+        query = select(Seller).options(selectinload(Seller.books))
         result = await session.execute(query)
         sellers = result.scalars().all()
         
@@ -113,44 +124,53 @@ async def update_seller(seller_id: int, seller_data: IncomingSeller, session: DB
     try:
         logger.info(f"Attempting to update seller with ID: {seller_id}")
         
-        if seller := await session.get(Seller, seller_id):
-            # Check if new email already exists for a different seller
-            if seller.e_mail != seller_data.e_mail:
-                logger.info(f"Email change detected from {seller.e_mail} to {seller_data.e_mail}")
-                existing_seller = await session.execute(
-                    select(Seller).filter(Seller.e_mail == seller_data.e_mail)
-                )
-                if existing_seller.scalar_one_or_none():
-                    logger.warning(f"Attempt to update seller with email already in use: {seller_data.e_mail}")
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST, 
-                        detail="Email already in use by another seller"
-                    )
-            
-            # Validate password (simple length check)
-            if len(seller_data.password) < 8:
-                logger.warning(f"Attempt to update seller with invalid password length")
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail="Password must be at least 8 characters long"
-                )
-                    
-            seller.first_name = seller_data.first_name
-            seller.last_name = seller_data.last_name
-            seller.e_mail = seller_data.e_mail
-            seller.password = seller_data.password  # TODO: hash this password
-            
-            await session.commit()
-            await session.refresh(seller)
-            
-            logger.info(f"Successfully updated seller with ID: {seller_id}")
-            return seller
+        stmt = select(Seller).where(Seller.id == seller_id)
+        result = await session.execute(stmt)
+        seller = result.scalar_one_or_none()
         
-        logger.warning(f"Attempt to update non-existent seller with ID: {seller_id}")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail="Seller not found"
-        )
+        if not seller:
+            logger.warning(f"Attempt to update non-existent seller with ID: {seller_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Seller not found"
+            )
+            
+        # Check if new email already exists for a different seller
+        if seller.e_mail != seller_data.e_mail:
+            logger.info(f"Email change detected from {seller.e_mail} to {seller_data.e_mail}")
+            existing_seller = await session.execute(
+                select(Seller).filter(Seller.e_mail == seller_data.e_mail)
+            )
+            if existing_seller.scalar_one_or_none():
+                logger.warning(f"Attempt to update seller with email already in use: {seller_data.e_mail}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, 
+                    detail="Email already in use by another seller"
+                )
+        
+        # Validate password (simple length check)
+        if len(seller_data.password) < 8:
+            logger.warning(f"Attempt to update seller with invalid password length")
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Password must be at least 8 characters long"
+            )
+                
+        seller.first_name = seller_data.first_name
+        seller.last_name = seller_data.last_name
+        seller.e_mail = seller_data.e_mail
+        seller.password = seller_data.password  # TODO: hash this password
+        
+        await session.commit()
+        
+        # Reload with relationships
+        stmt = select(Seller).where(Seller.id == seller_id).options(selectinload(Seller.books))
+        result = await session.execute(stmt)
+        updated_seller = result.scalar_one()
+        
+        logger.info(f"Successfully updated seller with ID: {seller_id}")
+        return updated_seller
+        
     except SQLAlchemyError as e:
         logger.error(f"Database error while updating seller {seller_id}: {str(e)}")
         await session.rollback()

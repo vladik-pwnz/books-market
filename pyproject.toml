@@ -60,6 +60,8 @@ watchfiles = "1.0.4"
 websockets = "14.2"
 black = "^25.1.0"
 flake8 = "^7.1.2"
+alembic = "^1.15.1"
+psycopg2-binary = "^2.9.10"
 
 
 [build-system]
