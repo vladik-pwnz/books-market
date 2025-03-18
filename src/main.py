@@ -7,22 +7,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.configurations.database import create_db_and_tables, global_init
 from src.routers import v1_router
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    global_init()
-    # Run Alembic migrations (this replaces direct table creation)
-    await create_db_and_tables()
-    yield
-
-
 app = FastAPI(
     title="Book Library App",
     description="Учебное приложение для MTS Shad",
     version="0.0.1",
     default_response_class=ORJSONResponse,
     responses={404: {"description": "Not found!"}},
-    lifespan=lifespan,
     docs_url="/api/v1/docs",
     redoc_url="/api/v1/redoc"
 )
