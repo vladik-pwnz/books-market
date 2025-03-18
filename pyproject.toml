@@ -62,6 +62,9 @@ black = "^25.1.0"
 flake8 = "^7.1.2"
 alembic = "^1.15.1"
 psycopg2-binary = "^2.9.10"
+python-ldap = "^3.4.4"
+authlib = "^1.5.1"
+passlib = "^1.7.4"
 
 
 [build-system]

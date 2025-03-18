@@ -1,11 +1,13 @@
-from fastapi import APIRouter, Depends, Response, status, HTTPException
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.configurations import get_async_session
 from src.models.books import Book
 from src.models.sellers import Seller
 from src.schemas import IncomingBook, ReturnedAllBooks, ReturnedBook
-from sqlalchemy.ext.asyncio import AsyncSession
-from src.configurations import get_async_session
-from typing import Annotated
 
 books_router = APIRouter(tags=["books"], prefix="/books")
 
