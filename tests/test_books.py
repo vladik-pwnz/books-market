@@ -1,10 +1,12 @@
+import uuid
+
 import pytest
+import pytest_asyncio
+from fastapi import status
 from sqlalchemy import select
+
 from src.models.books import Book
 from src.models.sellers import Seller
-from fastapi import status
-import pytest_asyncio
-import uuid
 
 
 @pytest_asyncio.fixture
@@ -49,9 +51,9 @@ async def test_create_book(async_client, db_session, create_seller):
         "seller_id": seller.id,
     }
 
-    assert (
-        result_data == expected_data
-    ), f"Expected {expected_data}, but got {result_data}"
+    assert result_data == expected_data, (
+        f"Expected {expected_data}, but got {result_data}"
+    )
 
 
 @pytest.mark.asyncio
@@ -217,6 +219,6 @@ async def test_delete_book_with_invalid_book_id(
     invalid_book_id = book.id + 1  # wrong ID
     response = await async_client.delete(f"/api/v1/books/{invalid_book_id}")
 
-    assert (
-        response.status_code == status.HTTP_404_NOT_FOUND
-    ), f"Expected 404, got {response.status_code}"
+    assert response.status_code == status.HTTP_404_NOT_FOUND, (
+        f"Expected 404, got {response.status_code}"
+    )

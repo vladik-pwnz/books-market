@@ -1,0 +1,13 @@
+# version: "3.9"
+# # docker swarm init  # Only needed once
+# # echo "your-secure-key" | docker secret create fastapi_secret_key -
+# # docker stack deploy -c docker-compose.yml -c docker-compose.override.yml fastapi_project
+
+# services:
+#   fastapi:
+#     secrets:
+#       - fastapi_secret_key
+
+# secrets:
+#   fastapi_secret_key:
+#     external: true

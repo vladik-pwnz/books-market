@@ -1,29 +1,34 @@
+import asyncio
+
 import pytest
 import pytest_asyncio
-import asyncio
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from src.configurations.settings import settings
-from src.models.base import BaseModel
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
+from src.configurations.database import run_alembic_upgrade
+from src.configurations.settings import settings
+from src.models.base import BaseModel
+
+# Create an async engine for the test DB
 async_test_engine = create_async_engine(
     settings.database_test_url,
-    echo=False,  # False to reduce noise in test output
-    poolclass=NullPool,  # Disable connection pooling to avoid conflicts
+    echo=False,
+    poolclass=NullPool,
 )
 
-# a session factory for the test database
+# A session factory for the test database
 async_test_session = async_sessionmaker(
     bind=async_test_engine, expire_on_commit=False, autoflush=False
 )
 
+
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def create_tables():
-    """Create tables in the test database once per session."""
-    async with async_test_engine.begin() as conn:
-        await conn.run_sync(BaseModel.metadata.drop_all)
-        await conn.run_sync(BaseModel.metadata.create_all)
+    """Run Alembic migrations on the test database once per session."""
+    # TODO: adjust run_alembic_upgrade to use the test URL.
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, run_alembic_upgrade)
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -80,7 +85,7 @@ def test_app(override_get_async_session):
 @pytest_asyncio.fixture
 async def async_client(test_app):
     """Provide an async HTTP client configured to use the test app."""
-    from httpx import AsyncClient, ASGITransport
+    from httpx import ASGITransport, AsyncClient
 
     async with AsyncClient(
         transport=ASGITransport(app=test_app), base_url="http://127.0.0.1:8000"

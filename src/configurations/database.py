@@ -1,70 +1,77 @@
+import asyncio
 import logging
+import sys
 
-from typing import AsyncGenerator, Callable, Optional
-from sqlalchemy.ext.asyncio import (
-    AsyncEngine,
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
+                                    create_async_engine)
 
-from src.models.base import BaseModel
+from alembic import command
+from alembic.config import Config
 from src.configurations.settings import settings
 
-__all__ = ["global_init", "get_async_session", "create_db_and_tables"]
-
-logger = logging.getLogger("__name__")
-
-__async_engine: Optional[AsyncEngine] = None
-__session_factory: Optional[Callable[[], AsyncSession]] = None
+logger = logging.getLogger(__name__)
 
 SQLALCHEMY_DATABASE_URL = settings.database_url
 
+__async_engine = None
+__session_factory = None
 
-def global_init() -> None:  # TODO: this also instead of alembic
+__all__ = [
+    "global_init",
+    "get_async_session",
+    "run_alembic_upgrade",
+    "create_db_and_tables",
+]
+
+
+def global_init() -> None:
+    """
+    Initializes the async database engine and session factory.
+    """
     global __async_engine, __session_factory
-
     if __session_factory:
         return
-
     if not __async_engine:
         __async_engine = create_async_engine(url=SQLALCHEMY_DATABASE_URL, echo=True)
-
     __session_factory = async_sessionmaker(__async_engine)
 
 
-async def get_async_session() -> AsyncGenerator:
+async def get_async_session() -> AsyncSession:
+    """
+    Provides an async database session.
+    """
     global __session_factory
-
     if not __session_factory:
-        raise ValueError(
-            {"message": "You must call global_init() before using this method"}
-        )
+        raise ValueError("You must call global_init() before using this method")
 
     session: AsyncSession = __session_factory()
-
     try:
         yield session
         await session.commit()
     except Exception as e:
-        logger.error("Raises exception: %s", e)
+        logger.error("Exception occurred: %s", e)
         raise e
     finally:
         await session.rollback()
         await session.close()
 
 
+def run_alembic_upgrade():
+    """
+    Runs Alembic migrations synchronously. Ensures that all migrations are applied.
+    """
+    logger.info("Running Alembic migrations...")
+    alembic_cfg = Config("alembic.ini")
+    alembic_cfg.set_main_option(
+        "sqlalchemy.url", settings.database_url.replace("+asyncpg", "")
+    )
+    command.upgrade(alembic_cfg, "head")
+    logger.info("✅ Alembic migrations applied successfully.")
+
+
 async def create_db_and_tables():
-    from src.models.sellers import Seller
-    from src.models.books import Book
-
-    global __async_engine
-
-    if __async_engine is None:
-        raise ValueError(
-            {"message": "You must call global_init() before using this method"}
-        )
-
-    async with __async_engine.begin() as conn:
-        # await conn.run_sync(BaseModel.metadata.drop_all) # TODO: instead of using alembic -- when we create new field, we just delete them and newly create
-        await conn.run_sync(BaseModel.metadata.create_all)
+    """
+    Uses Alembic to apply the latest migrations instead of directly calling create_all().
+    """
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, run_alembic_upgrade)

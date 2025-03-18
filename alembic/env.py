@@ -1,10 +1,10 @@
-from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
-from sqlalchemy.ext.asyncio import create_async_engine
-from alembic import context
-import sys
 import os
-import asyncio
+import sys
+from logging.config import fileConfig
+
+from sqlalchemy import engine_from_config, pool
+
+from alembic import context
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.configurations.settings import settings
@@ -19,7 +19,6 @@ config.set_main_option("sqlalchemy.url", settings.database_url.replace("+asyncpg
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
 # for 'autogenerate' support
 # Import the models that should be part of the metadata
 from src.models.base import BaseModel
@@ -27,6 +26,7 @@ from src.models.books import Book
 from src.models.sellers import Seller
 
 target_metadata = BaseModel.metadata
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -45,7 +45,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        compare_type=True 
+        compare_type=True,
     )
 
     with context.begin_transaction():
@@ -54,7 +54,9 @@ def run_migrations_offline() -> None:
 
 async def run_async_migrations() -> None:
     """Run migrations in 'online' mode asynchronously."""
-    sync_url = settings.database_url.replace('postgresql+asyncpg', 'postgresql')  # the sync version of database_url by replacing the driver
+    sync_url = settings.database_url.replace(
+        "postgresql+asyncpg", "postgresql"
+    )  # the sync version of database_url by replacing the driver
 
     connectable = engine_from_config(
         {"sqlalchemy.url": sync_url},
@@ -64,18 +66,17 @@ async def run_async_migrations() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-            compare_type=True
+            connection=connection, target_metadata=target_metadata, compare_type=True
         )
 
         with context.begin_transaction():
             context.run_migrations()
+
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-    sync_url = settings.database_url.replace('postgresql+asyncpg', 'postgresql')
-    
+    sync_url = settings.database_url.replace("postgresql+asyncpg", "postgresql")
+
     connectable = engine_from_config(
         {"sqlalchemy.url": sync_url},
         prefix="sqlalchemy.",
@@ -84,13 +85,12 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-            compare_type=True
+            connection=connection, target_metadata=target_metadata, compare_type=True
         )
 
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()
