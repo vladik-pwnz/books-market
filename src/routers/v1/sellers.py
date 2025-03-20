@@ -91,7 +91,7 @@ async def get_seller(seller_id: int, session: DBSession):
                 status_code=status.HTTP_404_NOT_FOUND, detail="Seller not found"
             )
 
-        return ReturnedSeller.model_validate(seller)
+        return seller
 
     except SQLAlchemyError as e:
         logger.error(f"Database error while fetching seller {seller_id}: {str(e)}")
@@ -111,6 +111,7 @@ async def get_all_sellers(session: DBSession):
 
         logger.info(f"Retrieved {len(sellers)} sellers")
         return sellers
+
     except SQLAlchemyError as e:
         logger.error(f"Database error while fetching all sellers: {str(e)}")
         raise HTTPException(

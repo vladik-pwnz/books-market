@@ -11,10 +11,11 @@ class BaseSeller(BaseModel):
     first_name: str
     last_name: str
     e_mail: EmailStr
-    password: str
 
 
 class IncomingSeller(BaseSeller):
+    password: str
+
     @field_validator("password")
     @classmethod
     def validate_password(cls, val: str):
