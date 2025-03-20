@@ -17,6 +17,14 @@ sellers_router = APIRouter(tags=["sellers"], prefix="/sellers")
 
 DBSession = Annotated[AsyncSession, Depends(get_async_session)]
 
+async def handle_integrity_error(session, email: str):
+    """Handles IntegrityError (duplicate email) in create/update operations."""
+    await session.rollback()
+    logger.warning(f"Email already in use: {email}")
+    raise HTTPException(
+        status_code=400,
+        detail="Email already in use by another seller",
+    )
 
 @sellers_router.post("/", response_model=ReturnedSeller, status_code=status.HTTP_201_CREATED)
 async def create_seller(
@@ -48,12 +56,7 @@ async def create_seller(
         return ReturnedSeller.model_validate(seller_instance)
 
     except IntegrityError:
-        await session.rollback()
-        logger.warning(f"Attempt to create seller with existing email: {seller.e_mail}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Seller with this email already exists",
-        )
+        await handle_integrity_error(session, seller.e_mail)
 
     except SQLAlchemyError as e:
         logger.error(f"Database error while creating seller: {str(e)}")
@@ -148,13 +151,8 @@ async def update_seller(seller_id: int, seller_data: IncomingSeller, session: DB
 
             return updated_seller
 
-        except IntegrityError:  # duplicate email issue
-            await session.rollback()
-            logger.warning(f"Email already in use: {seller_data.e_mail}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already in use by another seller",
-            )
+        except IntegrityError:
+            await handle_integrity_error(session, seller.e_mail)
 
     except SQLAlchemyError as e:
         logger.error(f"Database error while updating seller {seller_id}: {str(e)}")
