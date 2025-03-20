@@ -20,4 +20,9 @@ else
     exit 1
 fi
 
-exec uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+echo "🔄 Running Alembic migrations..."
+alembic upgrade head
+echo "✅ Migrations applied."
+
+echo "Starting Uvicorn..."
+exec uvicorn src.main:app --host 0.0.0.0 --port 8000 --log-level debug

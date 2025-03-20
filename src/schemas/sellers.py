@@ -11,13 +11,14 @@ class BaseSeller(BaseModel):
     first_name: str
     last_name: str
     e_mail: EmailStr
-    password: str
 
 
 class IncomingSeller(BaseSeller):
-    @classmethod
+    password: str
+
     @field_validator("password")
-    def validate_password(val: str):
+    @classmethod
+    def validate_password(cls, val: str):
         if len(val) < 8:
             raise ValueError("Password is too short!")
         return val
@@ -25,7 +26,7 @@ class IncomingSeller(BaseSeller):
 
 class ReturnedSeller(BaseSeller):
     id: int
-    books: Optional[List[ReturnedBook]] = []
+    books: Optional[List[ReturnedBook]] = Field(default_factory=list)
 
     model_config = {"from_attributes": True, "exclude": {"password"}}
 
