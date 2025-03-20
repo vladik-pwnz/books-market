@@ -33,7 +33,8 @@ def global_init() -> None:
         return
     if not __async_engine:
         __async_engine = create_async_engine(url=SQLALCHEMY_DATABASE_URL, echo=True)
-    __session_factory = async_sessionmaker(__async_engine)
+    __session_factory = async_sessionmaker(__async_engine, expire_on_commit=False)
+
 
 
 async def get_async_session() -> AsyncSession:

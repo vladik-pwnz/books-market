@@ -18,9 +18,7 @@ sellers_router = APIRouter(tags=["sellers"], prefix="/sellers")
 DBSession = Annotated[AsyncSession, Depends(get_async_session)]
 
 
-@sellers_router.post(
-    "/", response_model=ReturnedSeller, status_code=status.HTTP_201_CREATED
-)
+@sellers_router.post("/", response_model=ReturnedSeller, status_code=status.HTTP_201_CREATED)
 async def create_seller(
     seller: IncomingSeller,
     session: DBSession,
@@ -65,10 +63,11 @@ async def create_seller(
             .options(selectinload(Seller.books))
         )
         result = await session.execute(stmt)
-        new_seller = result.scalar_one()
+        seller_instance = result.scalar_one()
 
-        logger.info(f"Successfully created seller with ID: {new_seller.id}")
-        return new_seller
+        # Convert to Pydantic model (this now works because the instance is fully loaded)
+        return ReturnedSeller.model_validate(seller_instance)
+
     except SQLAlchemyError as e:
         logger.error(f"Database error while creating seller: {str(e)}")
         await session.rollback()
@@ -112,7 +111,7 @@ async def get_seller(seller_id: int, session: DBSession):
         )
 
 
-@sellers_router.get("/", response_model=List[ReturnedSeller])
+@sellers_router.get("/", response_model=List[ReturnedSeller], response_model_exclude={"password"})
 async def get_all_sellers(session: DBSession):
     try:
         logger.info("Fetching all sellers")

@@ -25,7 +25,7 @@ class IncomingSeller(BaseSeller):
 
 class ReturnedSeller(BaseSeller):
     id: int
-    books: Optional[List[ReturnedBook]] = []
+    books: Optional[List[ReturnedBook]] = Field(default_factory=list)
 
     model_config = {"from_attributes": True, "exclude": {"password"}}
 
