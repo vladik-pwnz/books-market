@@ -15,9 +15,9 @@ class BaseSeller(BaseModel):
 
 
 class IncomingSeller(BaseSeller):
-    @classmethod
     @field_validator("password")
-    def validate_password(val: str):
+    @classmethod
+    def validate_password(cls, val: str):
         if len(val) < 8:
             raise ValueError("Password is too short!")
         return val
